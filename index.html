@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monetization Suite — Master Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap');
+  :root{
+    --bg:#0b0e14; --surf:#131822; --surf2:#1a212f; --surf3:#212a3a;
+    --bdr:rgba(255,255,255,.07); --bdr2:rgba(255,255,255,.13);
+    --txt:#dde1ed; --muted:#6b7591; --dim:#8891a8;
+    --accent:#4d8ef5; --green:#34c98a; --red:#f06464; --amber:#f5a623; --purple:#a86ef5;
+    --fh:'Syne',sans-serif; --fb:'DM Sans',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--txt);font-family:var(--fb);font-size:13px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1480px;margin:0 auto;padding:28px 28px 56px;}
+
+  /* ── Masthead ── */
+  .mast{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:26px;flex-wrap:wrap;gap:16px;border-bottom:1px solid var(--bdr);padding-bottom:18px;}
+  .mast-eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .mast h1{font-family:var(--fh);font-size:22px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+  .mast p{font-size:11.5px;color:var(--muted);margin-top:3px;}
+  .mast-meta{text-align:right;font-size:11px;color:var(--muted);}
+  .mast-meta b{color:var(--dim);font-weight:600;}
+  .print-btn{margin-top:6px;background:var(--surf2);border:1px solid var(--bdr2);color:var(--txt);font-family:var(--fb);font-size:11px;padding:6px 13px;border-radius:7px;cursor:pointer;}
+  .print-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* ── Exec summary strip ── */
+  .strip{display:grid;grid-template-columns:1.3fr repeat(4,1fr);gap:10px;margin-bottom:26px;}
+  .strip-hero{background:linear-gradient(135deg,var(--surf2),var(--surf));border:1px solid var(--bdr2);border-radius:11px;padding:13px 16px;position:relative;overflow:hidden;}
+  .strip-hero::after{content:'';position:absolute;top:-40%;right:-20%;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(77,142,245,.16),transparent 70%);}
+  .strip-hero-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;margin-bottom:6px;}
+  .strip-hero-val{font-family:var(--fh);font-size:21px;font-weight:800;color:#fff;letter-spacing:-.3px;position:relative;}
+  .strip-hero-sub{font-size:10px;color:var(--green);margin-top:5px;font-weight:600;position:relative;}
+  .stat{background:var(--surf);border:1px solid var(--bdr);border-radius:11px;padding:13px 16px;display:flex;flex-direction:column;justify-content:center;}
+  .stat-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin-bottom:6px;}
+  .stat-val{font-family:var(--fh);font-size:16px;font-weight:700;color:#fff;}
+  .stat-sub{font-size:9.5px;color:var(--muted);margin-top:4px;}
+  .stat-sub.ok{color:var(--green);} .stat-sub.bad{color:var(--red);} .stat-sub.amb{color:var(--amber);}
+
+  /* ── Section label ── */
+  .sec-lbl{display:flex;align-items:center;gap:10px;margin:0 0 13px;}
+  .sec-lbl .ln{flex:1;height:1px;background:var(--bdr);}
+  .sec-lbl span{font-family:var(--fh);font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;}
+
+  /* ── Dashboard cards ── */
+  .card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:30px;}
+  .dcard{background:var(--surf);border:1px solid var(--bdr);border-radius:13px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s;}
+  .dcard:hover{border-color:var(--bdr2);}
+  .dcard-top{padding:16px 18px 0;}
+  .dcard-tag{display:inline-flex;align-items:center;gap:6px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:20px;margin-bottom:11px;}
+  .tag-a{background:rgba(77,142,245,.14);color:var(--accent);}
+  .tag-b{background:rgba(168,110,245,.14);color:var(--purple);}
+  .tag-c{background:rgba(52,201,138,.14);color:var(--green);}
+  .dcard h3{font-family:var(--fh);font-size:14.5px;font-weight:700;color:#fff;margin-bottom:3px;}
+  .dcard-sub{font-size:10.5px;color:var(--muted);margin-bottom:15px;line-height:1.45;}
+  .dcard-kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 18px;margin-bottom:15px;}
+  .dk-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;margin-bottom:3px;}
+  .dk-val{font-family:var(--fh);font-size:16px;font-weight:700;color:#fff;}
+  .dk-val.ok{color:var(--green);} .dk-val.bad{color:var(--red);} .dk-val.amb{color:var(--amber);}
+  .dcard-chart{height:64px;padding:0 12px;margin-bottom:6px;}
+  .dcard-inprog{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:6px 18px 20px;min-height:104px;}
+  .ip-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:var(--amber);background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.28);border-radius:20px;padding:4px 12px;margin-bottom:9px;}
+  .ip-note{font-size:10.5px;color:var(--muted);line-height:1.45;max-width:220px;}
+  .dcard-foot{margin-top:auto;border-top:1px solid var(--bdr);padding:11px 18px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.015);}
+  .dcard-status{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .dot{width:6px;height:6px;border-radius:50%;display:inline-block;}
+  .dot.live{background:var(--green);box-shadow:0 0 0 3px rgba(52,201,138,.18);}
+  .dcard-link{font-size:10.5px;color:var(--accent);font-weight:600;text-decoration:none;background:none;border:none;cursor:pointer;font-family:var(--fb);display:flex;align-items:center;gap:4px;}
+  .dcard-link:hover{text-decoration:underline;}
+
+  /* ── Consolidated trend ── */
+  .trend-panel{background:var(--surf);border:1px solid var(--bdr);border-radius:13px;padding:18px 20px;margin-bottom:30px;}
+  .trend-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .trend-head h3{font-family:var(--fh);font-size:13px;font-weight:700;color:#fff;}
+  .trend-head p{font-size:10.5px;color:var(--muted);margin-top:3px;}
+  .trend-ctrl{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .ptabs{display:flex;gap:4px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;padding:3px;}
+  .ptab{padding:4px 12px;border-radius:6px;border:none;background:transparent;color:var(--muted);font-size:10.5px;font-family:var(--fb);font-weight:600;cursor:pointer;transition:all .15s;}
+  .ptab:hover{color:var(--txt);}
+  .ptab.active{background:var(--accent);color:#fff;}
+  .legend{display:flex;gap:14px;}
+  .leg-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);}
+  .leg-sw{width:8px;height:8px;border-radius:2px;}
+  .trend-chart-wrap{height:210px;}
+
+  /* ── Footer strip ── */
+  .foot{display:flex;justify-content:space-between;align-items:center;padding-top:15px;border-top:1px solid var(--bdr);font-size:10px;color:var(--muted);flex-wrap:wrap;gap:8px;}
+  .foot b{color:var(--dim);}
+
+  /* ── Embedded dashboard modal ── */
+  .embed-overlay{display:none;position:fixed;inset:0;background:rgba(5,7,11,.72);backdrop-filter:blur(3px);z-index:1000;padding:26px;align-items:center;justify-content:center;}
+  .embed-overlay.open{display:flex;}
+  .embed-box{width:100%;height:100%;max-width:1400px;background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4);}
+  .embed-bar{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--bdr);background:var(--surf2);flex-shrink:0;}
+  .embed-title{font-family:var(--fh);font-size:12.5px;font-weight:700;color:#fff;}
+  .embed-actions{display:flex;align-items:center;gap:14px;}
+  .embed-ext{font-size:10.5px;color:var(--accent);text-decoration:none;font-weight:600;}
+  .embed-ext:hover{text-decoration:underline;}
+  .embed-close{background:var(--surf3);border:1px solid var(--bdr2);color:var(--txt);font-family:var(--fb);font-size:10.5px;font-weight:600;padding:5px 12px;border-radius:7px;cursor:pointer;}
+  .embed-close:hover{border-color:var(--red);color:var(--red);}
+  .embed-box iframe{flex:1;width:100%;border:none;background:#fff;}
+
+  @media(max-width:1100px){
+    .strip{grid-template-columns:1fr 1fr;}
+    .card-grid{grid-template-columns:1fr;}
+  }
+  @media print{
+    body{background:#fff;color:#111;}
+    .print-btn{display:none;}
+    .wrap{padding:10px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+
+  <div style="text-align:right;font-size:10.5px;color:var(--muted);margin-bottom:8px;letter-spacing:.03em;">Developed by <b style="color:var(--dim);font-weight:600;">Saurabh Yadav</b></div>
+
+  <div class="mast">
+    <div>
+      <div class="mast-eyebrow">Monetization &amp; Ad Ops · Internal</div>
+      <h1>Master Dashboard</h1>
+      <p>Consolidated view across eCPM Intelligence, 1P Deviation and Creative Approval tools</p>
+    </div>
+    <div class="mast-meta">
+      Report window: <b>1 – 13 Jul 2026</b><br>
+      Last synced: <b>13 Jul 2026, 6:42 PM</b>
+      <br><button class="print-btn" onclick="window.print()">↓ Export / Print</button>
+    </div>
+  </div>
+
+  <!-- ── Exec summary strip ── -->
+  <div class="strip">
+    <div class="strip-hero">
+      <div class="strip-hero-lbl">Total Tracked Revenue (DRR, MTD)</div>
+      <div class="strip-hero-val" id="stripDRR">—</div>
+      <div class="strip-hero-sub" id="stripDRRsub">Loading…</div>
+    </div>
+    <div class="stat">
+      <div class="stat-lbl">System Revenue</div>
+      <div class="stat-val" id="stripSYS">—</div>
+      <div class="stat-sub amb" id="stripDEVsub">Loading…</div>
+    </div>
+    <div class="stat">
+      <div class="stat-lbl">Advertisers Tracked</div>
+      <div class="stat-val" id="stripAdvCount">—</div>
+      <div class="stat-sub" id="stripAdvSub">Loading…</div>
+    </div>
+    <div class="stat">
+      <div class="stat-lbl">Creatives Pending</div>
+      <div class="stat-val">14</div>
+      <div class="stat-sub amb">in review queue</div>
+    </div>
+    <div class="stat">
+      <div class="stat-lbl">Unmatched Advertisers</div>
+      <div class="stat-val">27</div>
+      <div class="stat-sub bad">need mapping</div>
+    </div>
+  </div>
+
+  <!-- ── Per-dashboard cards ── -->
+  <div class="sec-lbl"><span>Dashboards</span><div class="ln"></div></div>
+  <div class="card-grid">
+
+    <div class="dcard">
+      <div class="dcard-top">
+        <span class="dcard-tag tag-a">● Revenue</span>
+        <h3>eCPM Intelligence</h3>
+        <div class="dcard-sub">Advertiser level eCPM tracking</div>
+      </div>
+      <div class="dcard-kpis">
+        <div><div class="dk-lbl">eCPM</div><div class="dk-val" id="ecpmVal">—</div></div>
+        <div><div class="dk-lbl">Advertisers</div><div class="dk-val" id="ecpmAdv">—</div></div>
+      </div>
+      <div class="dcard-chart"><canvas id="cSpoc"></canvas></div>
+      <div class="dcard-foot">
+        <span class="dcard-status" id="ecpmStatus"><span class="dot" style="background:var(--muted);"></span>Loading…</span>
+        <button class="dcard-link" onclick="openEmbed('https://saurabh3-yadav.github.io/paytmads-eCPM-Performance/','eCPM Intelligence')">Open dashboard →</button>
+      </div>
+    </div>
+
+    <div class="dcard">
+      <div class="dcard-top">
+        <span class="dcard-tag tag-b">● Deviation</span>
+        <h3>1P Deviation Monitor</h3>
+        <div class="dcard-sub">Advertiser-level 1P revenue deviation tracking</div>
+      </div>
+      <div class="dcard-kpis">
+        <div><div class="dk-lbl">Advertisers</div><div class="dk-val" id="devAdv">—</div></div>
+        <div><div class="dk-lbl">Flagged &gt;20%</div><div class="dk-val bad" id="devFlag">—</div></div>
+      </div>
+      <div class="dcard-chart"><canvas id="cDev"></canvas></div>
+      <div class="dcard-foot">
+        <span class="dcard-status" id="devStatus"><span class="dot" style="background:var(--muted);"></span>Loading…</span>
+        <button class="dcard-link" onclick="openEmbed('https://saurabh3-yadav.github.io/paytm-ads-1P-deviation/','1P Deviation Monitor')">Open dashboard →</button>
+      </div>
+    </div>
+
+    <div class="dcard">
+      <div class="dcard-top">
+        <span class="dcard-tag tag-c">● Workflow</span>
+        <h3>Creative Approval</h3>
+        <div class="dcard-sub">Upload → review → approval queue status</div>
+      </div>
+      <div class="dcard-inprog">
+        <div class="ip-badge">⏳ In Progress</div>
+        <div class="ip-note">Dashboard build under way — KPIs will appear here once live</div>
+      </div>
+      <div class="dcard-foot">
+        <span class="dcard-status"><span class="dot" style="background:var(--amber);box-shadow:0 0 0 3px rgba(245,166,35,.18);"></span>Not yet connected</span>
+        <span class="dcard-link" style="color:var(--muted);cursor:default;">Coming soon</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Consolidated trend ── -->
+  <div class="sec-lbl"><span>Trend</span><div class="ln"></div></div>
+  <div class="trend-panel">
+    <div class="trend-head">
+      <div>
+        <h3 id="trendTitle">Revenue trend — DRR vs System</h3>
+        <p id="trendSub">Consolidated across all SPOCs, sourced from the eCPM Intelligence dashboard</p>
+      </div>
+      <div class="trend-ctrl">
+        <div class="legend">
+          <div class="leg-item"><span class="leg-sw" style="background:var(--accent)"></span>DRR Revenue</div>
+          <div class="leg-item"><span class="leg-sw" style="background:var(--purple)"></span>System Revenue</div>
+        </div>
+        <div class="ptabs">
+          <button class="ptab" data-p="day" onclick="setPeriod('day')">Daily</button>
+          <button class="ptab" data-p="7d" onclick="setPeriod('7d')">Last 7D</button>
+          <button class="ptab active" data-p="month" onclick="setPeriod('month')">Monthly</button>
+        </div>
+      </div>
+    </div>
+    <div class="trend-chart-wrap"><canvas id="cTrend"></canvas></div>
+  </div>
+
+  <div class="foot">
+    <span>Sample layout · placeholder data — wire up to live sources next</span>
+    <span>Paytm Monetization &amp; Ad Ops · <b>Internal use only</b></span>
+  </div>
+
+</div>
+
+<!-- ── Embedded dashboard modal ── -->
+<div class="embed-overlay" id="embedOverlay">
+  <div class="embed-box">
+    <div class="embed-bar">
+      <span class="embed-title" id="embedTitle">Dashboard</span>
+      <div class="embed-actions">
+        <a id="embedNewTab" href="#" target="_blank" rel="noopener" class="embed-ext">Open in new tab ↗</a>
+        <button class="embed-close" onclick="closeEmbed()">✕ Close</button>
+      </div>
+    </div>
+    <iframe id="embedFrame" src="" title="Embedded dashboard"></iframe>
+  </div>
+</div>
+
+<script>
+Chart.defaults.font.family = "'DM Sans',sans-serif";
+
+// ── Embedded dashboard modal ──
+function openEmbed(url, title){
+  document.getElementById('embedTitle').textContent = title;
+  document.getElementById('embedFrame').src = url;
+  document.getElementById('embedNewTab').href = url;
+  document.getElementById('embedOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeEmbed(){
+  document.getElementById('embedOverlay').classList.remove('open');
+  document.getElementById('embedFrame').src = '';
+  document.body.style.overflow = '';
+}
+document.getElementById('embedOverlay').addEventListener('click', e=>{
+  if(e.target.id === 'embedOverlay') closeEmbed();
+});
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape') closeEmbed();
+});
+
+// ── Live data: JSONP loader (bypasses org CORS, same pattern as the dashboards themselves) ──
+function jsonpFetch(url, params){
+  return new Promise((resolve, reject)=>{
+    const cbName = 'jsonp_cb_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    let done = false;
+    const cleanup = ()=>{ delete window[cbName]; script.remove(); };
+    window[cbName] = (data)=>{ done = true; resolve(data); cleanup(); };
+    script.onerror = ()=>{ if(!done){ reject(new Error('JSONP load failed')); cleanup(); } };
+    const qs = params ? new URLSearchParams({...params, callback:cbName}).toString() : ('callback='+cbName);
+    script.src = url + (url.includes('?') ? '&' : '?') + qs;
+    document.body.appendChild(script);
+    setTimeout(()=>{ if(!done){ reject(new Error('JSONP timeout')); cleanup(); } }, 15000);
+  });
+}
+const fmtINR=n=>{
+  if(n==null||isNaN(n)) return '—';
+  const a=Math.abs(n), sg=n<0?'-':'';
+  if(a>=1e7) return sg+'₹'+(a/1e7).toFixed(2)+'Cr';
+  if(a>=1e5) return sg+'₹'+(a/1e5).toFixed(2)+'L';
+  if(a>=1e3) return sg+'₹'+(a/1e3).toFixed(1)+'K';
+  return sg+'₹'+a.toFixed(0);
+};
+const toNum=s=>{
+  if(s===undefined||s===null) return null;
+  s=String(s).trim();
+  if(s===''||s==='#N/A') return null;
+  s=s.replace(/,/g,'').replace(/[^0-9.\-]/g,'');
+  if(s==='') return null;
+  const v=parseFloat(s);
+  return isNaN(v)?null:v;
+};
+const normLive=s=>(s||'').toString().toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();
+const findColLive=(keys,cands)=>{
+  const lk=keys.map(k=>k.toLowerCase());
+  for(const c of cands){
+    const cl=c.toLowerCase();
+    let i=lk.findIndex(l=>l===cl); if(i>=0) return keys[i];
+    i=lk.findIndex(l=>l.includes(cl)); if(i>=0) return keys[i];
+  }
+  return null;
+};
+function markCardStatus(id, ok, label){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.innerHTML = ok
+    ? `<span class="dot live"></span>${label}`
+    : `<span class="dot" style="background:var(--red);"></span>${label}`;
+}
+
+// ── eCPM Intelligence card ──
+const ECPM_APPS_SCRIPT_URL = "https://script.google.com/a/macros/paytm.com/s/AKfycbyjIqFtPTFeB7kC0y2M7smESPGV0HGfmkfWohihQKXcibIesRsT2iE6yJqSDycIYFCp/exec";
+
+async function loadEcpmCard(){
+  try{
+    const json = await jsonpFetch(ECPM_APPS_SCRIPT_URL);
+    const drrRows = json.drr || [];
+    const sysRows = json.sysrev || [];
+    const impMap = {};
+    sysRows.forEach(row=>{
+      const adv = String(row.advertiser_name||'').trim();
+      if(!adv) return;
+      impMap[adv] = (impMap[adv]||0) + (toNum(row.Ads_Impressions)||0);
+    });
+    let totalRev=0, totalImp=0, advCount=0;
+    drrRows.forEach(row=>{
+      const adv = String(row['Advertiser Name (Ad Manager)']||'').trim();
+      if(!adv) return;
+      totalRev += toNum(row['Total budget Delivery'])||0;
+      totalImp += impMap[adv]||0;
+      advCount++;
+    });
+    const blended = totalImp ? (totalRev/totalImp*1000) : 0;
+    document.getElementById('ecpmVal').textContent = '₹'+blended.toFixed(2);
+    document.getElementById('ecpmAdv').textContent = advCount;
+    markCardStatus('ecpmStatus', true, 'Live · Google Sheet');
+  }catch(e){
+    document.getElementById('ecpmVal').textContent = '—';
+    document.getElementById('ecpmAdv').textContent = '—';
+    markCardStatus('ecpmStatus', false, 'Fetch failed');
+  }
+}
+
+// ── 1P Deviation Monitor card ──
+const DEV_APPS_SCRIPT_URL = "https://script.google.com/a/macros/paytm.com/s/AKfycbwenzNlwf07BXC7onD7wLlE9KZpnazm6oBGY2sNeSpucMctdD73KIJ9ghHPmwnBNZyWxA/exec";
+
+async function loadDevCard(){
+  try{
+    const [drrText, sysText] = await Promise.all([
+      jsonpFetch(DEV_APPS_SCRIPT_URL, {tab:'drr'}),
+      jsonpFetch(DEV_APPS_SCRIPT_URL, {tab:'sys'})
+    ]);
+    const drrRows = Papa.parse(drrText.trim(),{header:true,skipEmptyLines:true,transformHeader:h=>h.trim()}).data;
+    const sysRows = Papa.parse(sysText.trim(),{header:true,skipEmptyLines:true,transformHeader:h=>h.trim()}).data;
+    if(!drrRows.length || !sysRows.length) throw new Error('empty');
+
+    const dKeys=Object.keys(drrRows[0]);
+    const cAdv=findColLive(dKeys,['Advertiser Name (Ad Manager)','advertiser name','advertiser']);
+    const cDRR=findColLive(dKeys,['Total budget Delivery','budget delivery','drr revenue']);
+
+    const sKeys=Object.keys(sysRows[0]);
+    const cAdv2=findColLive(sKeys,['advertiser_name','advertiser name','advertiser']);
+    const cRev=findColLive(sKeys,['Revenue','system revenue']);
+
+    const sysMap={};
+    let totalSYS=0;
+    sysRows.forEach(r=>{
+      const adv=(r[cAdv2]||'').trim();
+      if(!adv||adv.toLowerCase().includes('total')) return;
+      const rev=toNum(r[cRev])||0;
+      totalSYS+=rev;
+      const k=normLive(adv);
+      sysMap[k]=(sysMap[k]||0)+rev;
+    });
+
+    let advCount=0, flagged=0, totalDRR=0;
+    drrRows.forEach(r=>{
+      const adv=(r[cAdv]||'').trim();
+      if(!adv||adv.toLowerCase().includes('total')) return;
+      const nk=normLive(adv);
+      let sysRev=sysMap[nk];
+      if(sysRev==null){
+        const found=Object.keys(sysMap).find(k=>k.includes(nk)||nk.includes(k));
+        if(found) sysRev=sysMap[found];
+      }
+      advCount++;
+      const drrRev=toNum(r[cDRR])||0;
+      totalDRR+=drrRev;
+      if(sysRev!=null && sysRev!==0){
+        const dev=Math.abs(((drrRev-sysRev)/sysRev)*100);
+        if(dev>20) flagged++;
+      }
+    });
+
+    document.getElementById('devAdv').textContent = advCount;
+    document.getElementById('devFlag').textContent = flagged;
+
+    // ── Update exec summary strip: Total Tracked Revenue, System Revenue, Advertisers Tracked ──
+    document.getElementById('stripDRR').textContent = fmtINR(totalDRR);
+    document.getElementById('stripSYS').textContent = fmtINR(totalSYS);
+    document.getElementById('stripAdvCount').textContent = advCount;
+    const stripDev = totalSYS ? ((totalDRR-totalSYS)/totalSYS*100) : null;
+    document.getElementById('stripDRRsub').textContent = 'Sum of DRR · Total budget Delivery';
+    document.getElementById('stripDEVsub').textContent = stripDev!=null ? (stripDev>=0?'+':'')+stripDev.toFixed(1)+'% deviation' : 'N/A';
+    document.getElementById('stripAdvSub').textContent = 'from DRR sheet';
+    markCardStatus('devStatus', true, 'Live · Google Sheet');
+  }catch(e){
+    document.getElementById('devAdv').textContent = '—';
+    document.getElementById('devFlag').textContent = '—';
+    markCardStatus('devStatus', false, 'Fetch failed');
+  }
+}
+
+loadEcpmCard();
+loadDevCard();
+
+function sparkline(id, data, color){
+  new Chart(document.getElementById(id), {
+    type:'line',
+    data:{ labels:data.map((_,i)=>i), datasets:[{ data, borderColor:color, backgroundColor:color+'22', fill:true, tension:.35, pointRadius:0, borderWidth:2 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{enabled:false} },
+      scales:{ x:{display:false}, y:{display:false} },
+      elements:{ line:{ borderJoinStyle:'round' } }
+    }
+  });
+}
+sparkline('cSpoc', [3.9,4.1,4.0,4.4,4.6,4.82], '#4d8ef5');
+sparkline('cDev',  [18,21,19,24,22,20],        '#a86ef5');
+
+// ── Trend chart: switches between Daily / 7D / Monthly sample data ──
+const TREND_DATA = {
+  day: {
+    title: 'Revenue trend — DRR vs System (day-wise, this month)',
+    sub: 'Consolidated across all SPOCs · daily granularity',
+    labels: ['1','2','3','4','5','6','7','8','9','10','11','12','13'],
+    drr: [14.2,15.1,13.8,16.0,15.4,14.9,16.3,15.8,16.5,17.1,16.8,17.4,18.0],
+    sys: [12.6,13.4,12.1,14.2,13.6,13.0,14.5,14.0,14.6,15.1,14.9,15.4,15.9],
+    unit:'L'
+  },
+  '7d': {
+    title: 'Revenue trend — DRR vs System (last 7 days)',
+    sub: 'Consolidated across all SPOCs · rolling 7-day view',
+    labels: ['7 Jul','8 Jul','9 Jul','10 Jul','11 Jul','12 Jul','13 Jul'],
+    drr: [15.8,16.5,17.1,16.8,17.4,17.9,18.0],
+    sys: [14.0,14.6,15.1,14.9,15.4,15.7,15.9],
+    unit:'L'
+  },
+  month: {
+    title: 'Revenue trend — DRR vs System',
+    sub: 'Consolidated across all SPOCs, sourced from the eCPM Intelligence dashboard',
+    labels: ['Feb','Mar','Apr','May','Jun','Jul'],
+    drr: [3.9,4.1,4.0,4.4,4.6,4.82],
+    sys: [3.6,3.7,3.5,3.9,4.0,4.31],
+    unit:'Cr'
+  }
+};
+
+let trendChart;
+function renderTrend(period){
+  const d = TREND_DATA[period];
+  document.getElementById('trendTitle').textContent = d.title;
+  document.getElementById('trendSub').textContent = d.sub;
+  document.querySelectorAll('.ptab').forEach(b=>b.classList.toggle('active', b.dataset.p===period));
+
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('cTrend'), {
+    type:'bar',
+    data:{
+      labels:d.labels,
+      datasets:[
+        { label:'DRR Revenue',    data:d.drr, backgroundColor:'#4d8ef5cc', borderRadius:5, barPercentage:.55 },
+        { label:'System Revenue', data:d.sys, backgroundColor:'#a86ef555', borderColor:'#a86ef5', borderWidth:1.5, borderRadius:5, barPercentage:.55 }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>' ₹'+ctx.raw+d.unit}} },
+      scales:{
+        x:{ ticks:{color:'#6b7591',font:{size:11}}, grid:{display:false} },
+        y:{ ticks:{color:'#6b7591',font:{size:10},callback:v=>'₹'+v+d.unit}, grid:{color:'rgba(255,255,255,.05)'} }
+      }
+    }
+  });
+}
+function setPeriod(p){ renderTrend(p); }
+renderTrend('month');
+
+</script>
+</body>
+</html>
